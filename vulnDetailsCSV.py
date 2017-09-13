@@ -171,9 +171,12 @@ while conncount < 3:
 		break
 	except:
 		conncount+=1
-		print "Problem connecting to SecurityCenter at "+str(schost)+" with username "+str(username)+". Attempt #"+str(conncount)
-		print "Retrying in 10 seconds"
-		time.sleep(10)
+		print "Problem connecting to SecurityCenter. Attempt #"+str(conncount)
+		print "Retrying in 15 seconds"
+		time.sleep(15)
+
+if conncount >= 3:
+	exit(-1)
 		
 print "TCP Connection to SecurityCenter established. Attempting login."
 scsm.login(username,password)
