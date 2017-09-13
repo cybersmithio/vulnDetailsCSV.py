@@ -164,10 +164,20 @@ if password == "":
 print "Connecting to",schost,"as",username,"to download vulnerability details"
 
 #Create a session as the user
-scsm=SecurityCenter5(schost)
+conncount=0
+while conncount < 3:
+	try:
+		scsm=SecurityCenter5(schost)
+		break
+	except:
+		conncount+=1
+		print "Problem connecting to SecurityCenter at "+str(schost)+" with username "+str(username)+". Attempt #"+str(conncount)
+		print "Retrying in 10 seconds"
+		time.sleep(10)
+		
+print "TCP Connection to SecurityCenter established. Attempting login."
 scsm.login(username,password)
-if DEBUG:
-	print "Logged in as "+str(username)+" to SecurityCenter at "+str(schost)
+print "Logged in as "+str(username)+" to SecurityCenter at "+str(schost)
 
 #Upload demo dashboards
 if DownloadReport(scsm):
