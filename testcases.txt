@@ -1,0 +1,9 @@
+This document outlines the various test cases done on this script.
+
+* Test script with user input.
+* Test script with all environment variables set.
+* Test script with SCHOST variable set.
+* Test script with SCUSERNAME variable set.
+* Test script with SCPASSWORD variable set.
+* Test script with SCHOST and SCUSERNAME set.
+* Test script when SecurityCenter is not running on the given IP address.
