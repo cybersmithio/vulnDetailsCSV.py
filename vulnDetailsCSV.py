@@ -29,6 +29,7 @@ from datetime import datetime,date, time
 import time
 import requests
 from securitycenter import SecurityCenter5
+import getpass
 		
 		
 ################################################################
@@ -49,8 +50,8 @@ from securitycenter import SecurityCenter5
 def DownloadReport(scsm):
 	#First upload the XML file, then tell SC to import it.
 	DEBUG=False
-	if DEBUG:
-		print "Launching report"
+
+	print "Sending request for a report"
 
 	resp=scsm.post('reportDefinition',json={
 		'name':'Vulnerability detail list','description':'','context':'','status':-1,'createdTime':0,'modifiedTime':0,'groups':[],'schedule':{'start':'TZID=:Invalid dateInvalid date','repeatRule':'FREQ=NOW;INTERVAL=','type':'now'},'type':'csv','definition':{'dataPoints':2147483647,'columns':[{'name':'pluginID'},{'name':'pluginName'},{'name':'familyID'},{'name':'severity'},{'name':'ip'},{'name':'protocol'},{'name':'port'},{'name':'exploitAvailable'},{'name':'repositoryID'},{'name':'macAddress'},{'name':'dnsName'},{'name':'netbiosName'},{'name':'pluginText'},{'name':'synopsis'},{'name':'description'},{'name':'solution'},{'name':'seeAlso'},{'name':'riskFactor'},{'name':'stigSeverity'},{'name':'baseScore'},{'name':'temporalScore'},{'name':'cvssVector'},{'name':'cpe'},{'name':'cve'},{'name':'bid'},{'name':'xref'},{'name':'firstSeen'},{'name':'lastSeen'},{'name':'vulnPubDate'},{'name':'patchPubDate'},{'name':'pluginPubDate'},{'name':'pluginModDate'},{'name':'exploitEase'},{'name':'exploitFrameworks'},{'name':'checkType'},{'name':'version'}],'dataSource':{'query':{'name':'','description':'','context':'','status':-1,'createdTime':0,'modifiedTime':0,'group':{'id':0,'name':'Administrator'},'groups':[],'type':'vuln','tool':'vulndetails','sourceType':'cumulative','filters':[],'vulnTool':'vulndetails'},'sortColumn':'','querySourceID':'','querySourceView':'all','querySourceType':'cumulative'}},'styleFamily':{'id':5,'name':'Plain, Letter','description':'','context':''},'pubSites':[],'shareUsers':[],'emailUsers':[],'emailTargets':'','emailTargetType':'1'})
@@ -64,11 +65,12 @@ def DownloadReport(scsm):
 		print "\n\nResponse error code/error message",respdata['error_code'],"/",respdata['error_msg']
 	if respdata['error_code'] == 0:
 		#Get the report ID:
-		if DEBUG:
-			print "Report submitted.  Report ID is",respdata['response']['reportResultID']
+		print "Report successfully submitted.  Report ID is",respdata['response']['reportResultID']
 		
 		#Get the status of the report:
 		reportstatus="Queued"
+		sys.stdout.write('Waiting for report to finish.')
+		sys.stdout.flush()
 		while reportstatus != "Completed":
 			reporturl='report/'+str(respdata['response']['reportResultID'])
 			if DEBUG:
@@ -81,9 +83,11 @@ def DownloadReport(scsm):
 			if DEBUG:
 				print "\n\nResponse error code/error message",represpdata['error_code'],"/",represpdata['error_msg']
 			reportstatus=represpdata['response']['status']
-			time.sleep(1)
+			time.sleep(5)
+			sys.stdout.write('.')
+			sys.stdout.flush()
 		
-
+		print "\nReport has completed, attempting download"
 		#Attempt to download report
 		reporturl='report/'+str(respdata['response']['reportResultID'])+'/download'
 		if DEBUG:
@@ -93,14 +97,21 @@ def DownloadReport(scsm):
 		if DEBUG:
 			print "Report response",represp
 			print "Report response text",represp.text
-		if DEBUG:
 			print "\n\nResponse error code/error message",represpdata['error_code'],"/",represpdata['error_msg']
-		f=open('output.csv','w')
-		f.write(represp.text)
-		f.close()
-		return(True)
+
+		if represpdata['error_code'] == 0:
+			f=open('output.csv','w')
+			f.write(represp.text)
+			f.close()
+			print "Report successfully downloaded into output.csv"
+			return(True)
+		else:
+			print "Error getting report"
+			return(False)
+			
 
 	#There was a problem, so return a False value
+	print "Error submitting report"
 	return(False)
 
 
@@ -147,7 +158,7 @@ else:
 		username=raw_input("Username:")
 
 if password == "":
-	password=raw_input("Password:")
+	password=getpass.getpass("Password:")
 
 
 print "Connecting to",schost,"as",username,"to download vulnerability details"
@@ -160,7 +171,7 @@ if DEBUG:
 
 #Upload demo dashboards
 if DownloadReport(scsm):
-	print "Report downloaded"
+	print "vulnDetailsCSV.py successfully completed"
 	exit(0)
 else:
 	print "Unable to download report"
